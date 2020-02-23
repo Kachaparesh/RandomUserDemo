@@ -10,14 +10,18 @@ import UIKit
 
 class ViewController: UIViewController {
     
-    fileprivate var currentPage: Page!
-    fileprivate var usersList = [User]()
+    @IBOutlet weak var PrevButton: UIBarButtonItem!
+    @IBOutlet weak var NextButton: UIBarButtonItem!
     @IBOutlet weak var userTable: UITableView!
     @IBOutlet weak var loader: UIActivityIndicatorView!
+    @IBOutlet weak var pageLabel: UILabel!
+    
+    fileprivate var currentPage: Page!
+    fileprivate var usersList = [User]()
     fileprivate var remoteReplicator: RemoteReplicator!
     fileprivate var randomUserApi: RandomUserApi!
     fileprivate var indexTitles: [String]!
-    @IBOutlet weak var pageLabel: UILabel!
+    
     let searchController = UISearchController(searchResultsController: nil)
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -31,7 +35,7 @@ class ViewController: UIViewController {
         
         //Register for notifications
         let notificationCenter = NotificationCenter.default
-        notificationCenter.addObserver(self, selector: #selector(self.updatePages), name: .updateUserTableData, object: nil)
+        notificationCenter.addObserver(self, selector: #selector(self.renderRecords), name: .updateUserTableData, object: nil)
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -45,20 +49,36 @@ class ViewController: UIViewController {
         - Parameter : None
         - Note: This method is used in starting, loading next page and loading previous page.
     */
-    @objc func updatePages()
+    func updatePages()
     {
-        DispatchQueue.main.async {
-            self.loader.startAnimating()
-        }
         let tempPage = self.randomUserApi.getSingleAndOnlyPage(remoteReplicator.getCurrentPage())
+        
         if tempPage == nil {
-            self.remoteReplicator.fetchData()
-            return
+            DispatchQueue.main.async {
+                self.loader.startAnimating()
+            }
+            self.remoteReplicator.fetchData(viewController: self)
         }
-        self.currentPage = tempPage!
-        self.usersList = tempPage!.userResults?.allObjects as! [User]
+        else
+        {
+            self.currentPage = tempPage
+            self.usersList = tempPage?.userResults?.allObjects as? [User] ?? [User]()
+            self.userTable.reloadData()
+            self.pageLabel.text = "\(remoteReplicator.getCurrentPage())"
+            PrevButton.isEnabled = remoteReplicator.getCurrentPage() != 1
+            NextButton.isEnabled = tempPage != nil
+            self.loader.stopAnimating()
+        }
+    }
+    
+    @objc func renderRecords(){
+        let tempPage = self.randomUserApi.getSingleAndOnlyPage(remoteReplicator.getCurrentPage())
+        self.currentPage = tempPage
+        self.usersList = tempPage?.userResults?.allObjects as? [User] ?? [User]()
         self.userTable.reloadData()
         self.pageLabel.text = "\(remoteReplicator.getCurrentPage())"
+        PrevButton.isEnabled = remoteReplicator.getCurrentPage() != 1
+        NextButton.isEnabled = tempPage != nil
         DispatchQueue.main.async {
             self.loader.stopAnimating()
         }
@@ -87,7 +107,7 @@ class ViewController: UIViewController {
             self.userTable.reloadData()
         }
         else{
-            self.usersList = self.currentPage?.userResults?.allObjects as! [User]
+            self.usersList = self.currentPage?.userResults?.allObjects as? [User] ?? [User]()
             self.userTable.reloadData()
         }
     }

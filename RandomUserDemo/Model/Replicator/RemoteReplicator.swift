@@ -6,7 +6,7 @@
 //  Copyright © 2020 Paresh Kacha. All rights reserved.
 //
 
-import Foundation
+import UIKit
 /**
     Remote Replicator handles calling remote datasource and parsing response JSON data and calls the Core Data Stack,
     (via RandomUserApi) to actually create Core Data Entities and persist to SQLite Datastore.
@@ -65,7 +65,7 @@ class RemoteReplicator {
         - Note: Returns within main thread
         - Parameter :None
     */
-    func fetchData() {
+    func fetchData(viewController: UIViewController) {
         
         isFetchInProgress = true
         networking.request(_urlPath: "https://randomuser.me/api/?page=\(pageNumber)&results=\(numberOfUSers)") { result in
@@ -85,8 +85,12 @@ class RemoteReplicator {
                                 }
                         case .failure(let err):
                             DispatchQueue.main.async {
+                                let alert = UIAlertController(title: "Error", message: err.localizedDescription, preferredStyle: .alert)
+                                alert.addAction(UIAlertAction(title: "Ok", style: .default, handler: nil))
+                                viewController.present(alert, animated: true, completion: nil)
                                 self.isFetchInProgress = false
                                 print("Failed to fetch courses:", err)
+                                NotificationCenter.default.post(name: Notification.Name(rawValue: "updateUserTableData"), object: err)
                             }
                         }
             }

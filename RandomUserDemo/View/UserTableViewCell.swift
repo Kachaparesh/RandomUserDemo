@@ -28,7 +28,7 @@ class UserTableViewCell: UITableViewCell {
     func renderUserCells(result:User)
     {
         self.userName.text = "\(result.name?.title! ?? "") \(result.name?.first! ?? "") \(result.name?.last! ?? "")"
-        self.userGender.text = result.gender
+        self.userGender.text = result.gender?.firstUppercased
         self.userDob.text = DateFormatter.getStringFromDate(result.dateOfBirth!.date!)
         self.userThumbnail.image = UIImage(named: "placeholder")
         self.userThumbnail.downloadImageFrom(link: result.picture!.thumbnail!, contentMode: UIView.ContentMode.scaleAspectFit)
